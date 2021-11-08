@@ -1,18 +1,19 @@
-# search-in-doc
+# Search in Doc
+[中文文档](README-CN.md)
 
-搜索文档中的关键词，支持多关键词搜索。双击搜索结果可直接打开文档，也可右键复制文档所在路径。
+Search keywords in documents, support multi-keyword search. Double-click the search results to open the document directly, or right-click to copy the path of the document.
 
-使用 Python + PyQt5 + PyPandoc 开发，支持的文档类型：commonmark, docbook, docx, epub, haddock, html, latex, markdown, odt, opml, org, rst, t2t, textile, twiki
+Developed with Python + PyQt5 + PyPandoc, supported document types: commonmark, docbook, docx, epub, haddock, html, latex, markdown, odt, opml, org, rst, t2t, textile, twiki
 
-# 界面
+# Interface
 
 ![screenshot](screenshot.png)
 
-# 使用
+# Usage
 
-首先在本地配置 Pandoc，修改 main.spec 文件中 Pandoc 路径。
+First, configure Pandoc locally and modify the Pandoc path in the main.spec file.
 
-使用 PyInstaller 进行打包，执行下列命令即可，打包后文件在 dist 文件夹中。
+Use PyInstaller to package, execute the following command, and the packaged file is in the dist folder.
 
 ```bash
 pyinstaller main.spec
