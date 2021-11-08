@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QAbstractTableModel, Qt, QPoint
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, \
-    QGridLayout, QPushButton, QLabel, QFileDialog, QTableView, QHeaderView, QMenu
+    QGridLayout, QPushButton, QLabel, QFileDialog, QTableView, QHeaderView, QMenu, QSizePolicy
 
 from Search import Search
 
@@ -13,7 +13,7 @@ from Search import Search
 class App(QWidget):
     def __init__(self, data):
         super().__init__()
-        self.title = '文档搜索'
+        self.title = '文档内容搜索'
         self.left = 400
         self.top = 50
         self.width = 800
@@ -30,40 +30,43 @@ class App(QWidget):
         label1 = QLabel('根目录')
         label2 = QLabel('关键词')
         label3 = QLabel('搜索结果')
-        label4 = QLabel('若未搜索到文档内新增内容，请点击右侧清空缓存按钮，再尝试搜索')
-        bt1 = QPushButton('选择目录')
-        bt2 = QPushButton('搜索')
-        bt3 = QPushButton('清空缓存')
-        line1 = QLineEdit("")
-        line2 = QLineEdit("")
         label3.setMaximumHeight(40)
-        label4.setMaximumHeight(40)
+        self.bt1 = QPushButton('选择目录')
+        self.bt2 = QPushButton('搜索')
+        self.bt3 = QPushButton('清空缓存')
+        self.line1 = QLineEdit("")
+        self.line2 = QLineEdit("")
 
         layout.addWidget(label1, 0, 0)
-        layout.addWidget(line1, 0, 1)
-        layout.addWidget(bt1, 0, 2)
+        layout.addWidget(self.line1, 0, 1)
+        layout.addWidget(self.bt1, 0, 2)
         layout.addWidget(label2, 1, 0)
-        layout.addWidget(line2, 1, 1)
-        layout.addWidget(bt2, 1, 2)
+        layout.addWidget(self.line2, 1, 1)
+        layout.addWidget(self.bt2, 1, 2)
         layout.addWidget(label3, 2, 0)
+        layout.addWidget(self.bt3, 2, 2)
+        self.bt2.setToolTip('初次搜索会创建缓存，请稍等')
+        self.bt3.setToolTip('若未搜索到文档内新增内容，请点击清空缓存按钮，再尝试搜索')
+        self.line1.setToolTip('若未选择目录，则默认为程序所在目录')
+        self.line2.setToolTip('支持多个关键词，请使用空格隔开，按 Enter 搜索')
 
-        table_model = MyTableModel(self, self.data)
-        table_view = QTableView()
-        table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        table_view.setModel(table_model)
-
-        layout.addWidget(table_view, 3, 0, 3, 3)
-
-        layout.addWidget(label4, 4, 0, 4, 2, alignment=Qt.AlignLeft | Qt.AlignBottom)
-        layout.addWidget(bt3, 4, 2, 4, 3, alignment=Qt.AlignRight | Qt.AlignBottom)
-
+        self.table_model = MyTableModel(self, self.data)
+        self.table_view = QTableView()
+        self.table_view.horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.table_view.setModel(self.table_model)
+        self.table_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.table_view.setContextMenuPolicy(Qt.CustomContextMenu)
+        layout.addWidget(self.table_view, 3, 0, 3, 3)
         self.setLayout(layout)
-        bt1.clicked.connect(self.set_browser_path)
-        bt2.clicked.connect(self.search_content)
 
-        table_view.doubleClicked.connect(self.on_double_click)
-        table_view.setContextMenuPolicy(Qt.CustomContextMenu)
-        table_view.customContextMenuRequested.connect(self.on_right_click)
+        self.bt1.clicked.connect(self.set_browser_path)
+        self.bt2.clicked.connect(self.search_content)
+        self.bt3.clicked.connect(self.clear_cache)
+        self.line1.returnPressed.connect(self.enter_to_search)
+        self.line2.returnPressed.connect(self.enter_to_search)
+        self.table_view.doubleClicked.connect(self.on_double_click)
+        self.table_view.customContextMenuRequested.connect(self.on_right_click)
 
         # Show widget
         self.center()
@@ -87,7 +90,7 @@ class App(QWidget):
             os.mkdir(cache_path)
         root_dir = self.line1.text()
         self.line1.setText(os.path.abspath(root_dir))
-        keyword = self.line2.text()
+        keyword = self.line2.text().strip().split(' ')
         search = Search()
         data = search.find_in_dir(root_dir, keyword, cache_path)
         if len(data) == 0:
@@ -95,6 +98,13 @@ class App(QWidget):
         self.table_model.set_data(data)
         self.table_view.repaint()
         self.table_view.update()
+
+    def clear_cache(self):
+        cache_path = os.path.abspath('.cache')
+        files = os.listdir(cache_path)
+        for file in files:
+            file_path = os.path.join(cache_path, file)
+            os.remove(file_path)
 
     def on_double_click(self, index):
         row = index.row()
@@ -120,6 +130,9 @@ class App(QWidget):
             QApplication.clipboard().setText(data)
         elif action == open_dir_action:
             subprocess.Popen(r'explorer /select, %s' % data)
+
+    def enter_to_search(self):
+        self.search_content()
 
 
 class MyTableModel(QAbstractTableModel):

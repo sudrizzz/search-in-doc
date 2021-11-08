@@ -18,12 +18,12 @@ class Search(object):
             if filename[0].startswith('~') or os.path.getsize(origin_path) == 0:
                 continue
             if not os.path.exists(cache_file):
-                print(origin_path)
+                # print(origin_path)
                 output = pypandoc.convert_file(origin_path, 'plain', outputfile=cache_file)
                 assert output == ''
             file = open(cache_file, "r", encoding='utf-8')
             for line in file:
-                if keyword in line:
+                if all(x in line for x in keyword):
                     data.append([index, origin_path, line.strip()])
                     index += 1
             file.close()
